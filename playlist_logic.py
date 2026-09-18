@@ -70,12 +70,12 @@ def classify_song(song: Song, profile: Dict[str, object]) -> str:
     hype_keywords = ["rock", "punk", "party"]
     chill_keywords = ["lofi", "ambient", "sleep"]
 
-    is_hype_keyword = any(k in genre for k in hype_keywords)
-    is_chill_keyword = any(k in title for k in chill_keywords)
+    is_hype_keyword = any(k in genre for k in hype_keywords) # type: ignore
+    is_chill_keyword = any(k in title for k in chill_keywords) # type: ignore
 
-    if genre == favorite_genre or energy >= hype_min_energy or is_hype_keyword:
+    if genre == favorite_genre or energy >= hype_min_energy or is_hype_keyword: # type: ignore
         return "Hype"
-    if energy <= chill_max_energy or is_chill_keyword:
+    if energy <= chill_max_energy or is_chill_keyword: # type: ignore
         return "Chill"
     return "Mixed"
 
@@ -119,9 +119,15 @@ def compute_playlist_stats(playlists: PlaylistMap) -> Dict[str, object]:
     total = len(hype)
     hype_ratio = len(hype) / total if total > 0 else 0.0
 
+    def _to_int(val: object) -> int:
+        try:
+            return int(val)  # type: ignore[arg-type]
+        except Exception:
+            return 0
+
     avg_energy = 0.0
     if all_songs:
-        total_energy = sum(song.get("energy", 0) for song in hype)
+        total_energy = sum(_to_int(song.get("energy", 0)) for song in all_songs)
         avg_energy = total_energy / len(all_songs)
 
     top_artist, top_count = most_common_artist(all_songs)
@@ -168,7 +174,7 @@ def search_songs(
 
     for song in songs:
         value = str(song.get(field, "")).lower()
-        if value and value in q:
+        if value and q in value:
             filtered.append(song)
 
     return filtered
@@ -200,7 +206,8 @@ def history_summary(history: List[Song]) -> Dict[str, int]:
     """Return a summary of moods seen in the history."""
     counts = {"Hype": 0, "Chill": 0, "Mixed": 0}
     for song in history:
-        mood = song.get("mood", "Mixed")
+        # song.get(...) returns object according to Song typing; ensure str for dict key access
+        mood = str(song.get("mood", "Mixed"))
         if mood not in counts:
             counts["Mixed"] += 1
         else:

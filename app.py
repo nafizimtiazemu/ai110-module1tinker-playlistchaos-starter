@@ -285,7 +285,10 @@ def render_playlist(label, songs):
 
     for song in filtered:
         mood = song.get("mood", "?")
-        tags = ", ".join(song.get("tags", []))
+        song_tags = song.get("tags", [])
+        if not isinstance(song_tags, (list, tuple)):
+            song_tags = []
+        tags = ", ".join(str(tag) for tag in song_tags)
         st.write(
             f"- **{song['title']}** by {song['artist']} "
             f"(genre {song['genre']}, energy {song['energy']}, mood {mood}) "
@@ -325,15 +328,27 @@ def stats_section(playlists):
 
     stats = compute_playlist_stats(playlists)
 
+    def _to_int(x):
+        try:
+            return int(x)
+        except Exception:
+            return 0
+
+    def _to_float(x):
+        try:
+            return float(x)
+        except Exception:
+            return 0.0
+
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total songs", stats["total_songs"])
-    col2.metric("Hype songs", stats["hype_count"])
-    col3.metric("Chill songs", stats["chill_count"])
+    col1.metric("Total songs", _to_int(stats.get("total_songs", 0)))
+    col2.metric("Hype songs", _to_int(stats.get("hype_count", 0)))
+    col3.metric("Chill songs", _to_int(stats.get("chill_count", 0)))
 
     col4, col5, col6 = st.columns(3)
-    col4.metric("Mixed songs", stats["mixed_count"])
-    col5.metric("Hype ratio", f"{stats['hype_ratio']:.2f}")
-    col6.metric("Average energy", f"{stats['avg_energy']:.2f}")
+    col4.metric("Mixed songs", _to_int(stats.get("mixed_count", 0)))
+    col5.metric("Hype ratio", _to_float(stats.get("hype_ratio", 0)))
+    col6.metric("Average energy", _to_float(stats.get("avg_energy", 0)))
 
     top_artist = stats["top_artist"]
     if top_artist:
